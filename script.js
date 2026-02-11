@@ -115,10 +115,13 @@ class AdvancedInvestmentCalculator {
             createdAt: new Date().toISOString()
         };
 
+        const currentYear = new Date().getFullYear();
+        
         // Initialize yearly data structure
         for (let year = data.startYear; year <= data.startYear + data.period - 1; year++) {
+            const isFutureYear = year > currentYear;
             investment.yearlyData[year] = {
-                contributions: new Array(12).fill(data.initialAmount),
+                contributions: new Array(12).fill(isFutureYear ? 0 : data.initialAmount),
                 yearStartValue: 0,
                 yearEndValue: 0,
                 yearlyReturns: 0,
@@ -242,6 +245,9 @@ class AdvancedInvestmentCalculator {
             pauseBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
             pauseBtn.classList.add('bg-yellow-500', 'hover:bg-yellow-600');
         }
+
+        // Add calculation logs button
+        this.addCalculationLogsButton();
     }
 
     createYearAccordion() {
@@ -266,6 +272,9 @@ class AdvancedInvestmentCalculator {
                                 ${isPastYear ? '<span class="ml-2 text-xs bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 px-2 py-1 rounded">Complete</span>' : 
                                   isCurrentYear ? '<span class="ml-2 text-xs bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100 px-2 py-1 rounded">Current</span>' :
                                   '<span class="ml-2 text-xs bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100 px-2 py-1 rounded">Future</span>'}
+                                ${!isFutureYear ? `<button onclick="event.stopPropagation(); calculator.zeroAllMonths(${year})" class="ml-4 text-xs bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-100 px-2 py-1 rounded hover:bg-red-200 dark:hover:bg-red-700">
+                                    <i class="fas fa-times mr-1"></i>Zero Year
+                                </button>` : ''}
                             </div>
                             <div class="text-right">
                                 <p class="text-sm text-gray-600 dark:text-gray-400">Year End: ${this.formatCurrencyForInvestment(inv, yearData.yearEndValue)}</p>
@@ -273,15 +282,21 @@ class AdvancedInvestmentCalculator {
                             </div>
                         </div>
                     </div>
-                    <div class="accordion-content" id="accordion-${year}">
+                    <div class="accordion-content ${!isFutureYear ? 'active' : ''}" id="accordion-${year}">
                         <div class="p-4 bg-white dark:bg-gray-800">
                             <div class="mb-4">
                                 <div class="flex justify-between items-center mb-2">
                                     <h5 class="font-medium text-gray-700 dark:text-gray-300">Monthly Contributions</h5>
-                                    <div class="space-x-2">
-                                        <button onclick="calculator.applyToAllMonths(${year}, ${inv.yearlyData[year].contributions[0] || 0})" class="text-xs bg-primary-100 text-primary-700 dark:bg-primary-800 dark:text-primary-100 px-2 py-1 rounded hover:bg-primary-200 dark:hover:bg-primary-700">
-                                            Apply to All
-                                        </button>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="flex items-center space-x-1">
+                                            <input type="number" 
+                                                id="applyAllInput-${year}" 
+                                                class="w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white" 
+                                                placeholder="Amount">
+                                            <button onclick="calculator.applyToAllMonths(${year}, document.getElementById('applyAllInput-${year}').value)" class="text-xs bg-primary-100 text-primary-700 dark:bg-primary-800 dark:text-primary-100 px-2 py-1 rounded hover:bg-primary-200 dark:hover:bg-primary-700">
+                                                Apply to All
+                                            </button>
+                                        </div>
                                         <button onclick="calculator.zeroAllMonths(${year})" class="text-xs bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-100 px-2 py-1 rounded hover:bg-red-200 dark:hover:bg-red-700">
                                             Zero All
                                         </button>
@@ -347,7 +362,8 @@ class AdvancedInvestmentCalculator {
 
     applyToAllMonths(year, amount) {
         const inv = this.currentInvestment;
-        inv.yearlyData[year].contributions = new Array(12).fill(amount);
+        const parsedAmount = parseFloat(amount) || 0;
+        inv.yearlyData[year].contributions = new Array(12).fill(parsedAmount);
         this.recalculateInvestment(inv);
         this.saveToStorage();
         this.updateInvestmentDetails();
@@ -404,42 +420,124 @@ class AdvancedInvestmentCalculator {
         }
     }
 
-    // Advanced Calculation Engine
+    // Advanced Calculation Engine with detailed logging
     recalculateInvestment(investment) {
         const monthlyReturn = investment.annualReturn / 100 / 12;
         let currentValue = 0;
         let totalInvested = 0;
+        const calculationLogs = [];
 
         // Sort years to ensure proper calculation order
         const years = Object.keys(investment.yearlyData).map(Number).sort((a, b) => a - b);
+
+        calculationLogs.push(`=== ${investment.name} Calculation Log ===`);
+        calculationLogs.push(`Annual Return: ${investment.annualReturn}% | Monthly Return: ${(monthlyReturn * 100).toFixed(4)}%`);
 
         for (let i = 0; i < years.length; i++) {
             const year = years[i];
             const yearData = investment.yearlyData[year];
             
+            // Ensure all contributions are numbers
+            yearData.contributions = yearData.contributions.map(val => parseFloat(val) || 0);
+            
             // Set year start value
             yearData.yearStartValue = currentValue;
+            calculationLogs.push(`\n--- Year ${year} ---`);
+            calculationLogs.push(`Starting Value: ${this.formatCurrencyForInvestment(investment, currentValue)}`);
             
             // Calculate monthly contributions and growth
             let yearEndValue = currentValue;
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            
             for (let month = 0; month < 12; month++) {
-                const contribution = yearData.contributions[month] || 0;
+                const contribution = parseFloat(yearData.contributions[month]) || 0;
                 totalInvested += contribution;
-                yearEndValue = (yearEndValue + contribution) * (1 + monthlyReturn);
+                const beforeGrowth = yearEndValue + contribution;
+                yearEndValue = beforeGrowth * (1 + monthlyReturn);
+                const monthlyGrowth = yearEndValue - beforeGrowth;
+                
+                calculationLogs.push(`${monthNames[month]}: Contributed ${this.formatCurrencyForInvestment(investment, contribution)}, Growth ${this.formatCurrencyForInvestment(investment, monthlyGrowth)}, End: ${this.formatCurrencyForInvestment(investment, yearEndValue)}`);
             }
             
             // Update year data
             yearData.yearEndValue = yearEndValue;
-            yearData.yearlyReturns = yearEndValue - currentValue - yearData.contributions.reduce((a, b) => a + b, 0);
+            const yearTotalContributed = yearData.contributions.reduce((sum, val) => sum + parseFloat(val || 0), 0);
+            yearData.yearlyReturns = yearEndValue - currentValue - yearTotalContributed;
+            
+            calculationLogs.push(`Year ${year} Summary:`);
+            calculationLogs.push(`  Total Contributed: ${this.formatCurrencyForInvestment(investment, yearTotalContributed)}`);
+            calculationLogs.push(`  Year Growth: ${this.formatCurrencyForInvestment(investment, yearData.yearlyReturns)}`);
+            calculationLogs.push(`  Year End Value: ${this.formatCurrencyForInvestment(investment, yearData.yearEndValue)}`);
             
             // Set current value for next year
             currentValue = yearEndValue;
         }
 
+        calculationLogs.push(`\n=== Final Summary ===`);
+        calculationLogs.push(`Total Invested: ${this.formatCurrencyForInvestment(investment, totalInvested)}`);
+        calculationLogs.push(`Final Value: ${this.formatCurrencyForInvestment(investment, currentValue)}`);
+        calculationLogs.push(`Total Returns: ${this.formatCurrencyForInvestment(investment, currentValue - totalInvested)}`);
+
+        // Store calculation logs for display
+        investment.calculationLogs = calculationLogs;
+
         // Update investment totals
         investment.totalInvested = totalInvested;
         investment.currentValue = currentValue;
         investment.totalReturns = currentValue - totalInvested;
+    }
+
+    // Add calculation logs button and modal
+    addCalculationLogsButton() {
+        // Check if button already exists
+        if (document.getElementById('showLogsBtn')) return;
+        
+        const buttonContainer = document.querySelector('#investmentDetails .flex.justify-between.items-center.mb-6 .flex.space-x-2');
+        const logsButton = document.createElement('button');
+        logsButton.id = 'showLogsBtn';
+        logsButton.className = 'bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200';
+        logsButton.innerHTML = '<i class="fas fa-calculator mr-2"></i>Show Calculations';
+        logsButton.onclick = () => this.showCalculationLogs();
+        buttonContainer.appendChild(logsButton);
+    }
+
+    showCalculationLogs() {
+        const inv = this.currentInvestment;
+        if (!inv.calculationLogs) {
+            this.showNotification('No calculation logs available', 'warning');
+            return;
+        }
+
+        // Create modal
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+        modal.innerHTML = `
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-800 dark:text-white">
+                            <i class="fas fa-calculator text-purple-600 mr-2"></i>
+                            Calculation Logs - ${inv.name}
+                        </h3>
+                        <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 overflow-y-auto max-h-96">
+                        <pre class="text-xs font-mono text-gray-700 dark:text-gray-300 whitespace-pre-wrap">${inv.calculationLogs.join('\n')}</pre>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Close on outside click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
     }
 
     // Utility Functions
