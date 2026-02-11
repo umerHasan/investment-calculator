@@ -187,6 +187,8 @@ class AdvancedInvestmentCalculator {
                     contributions: new Array(12).fill(isFutureYear ? 0 : data.initialAmount),
                     yearStartValue: 0,
                     yearEndValue: 0,
+                    actualYearEndValue: null, // Manual override value
+                    isManualOverride: false,
                     yearlyReturns: 0,
                     isComplete: false
                 };
@@ -346,12 +348,17 @@ class AdvancedInvestmentCalculator {
                                 ${isPastYear ? '<span class="ml-2 text-xs bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 px-2 py-1 rounded">Complete</span>' : 
                                   isCurrentYear ? '<span class="ml-2 text-xs bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100 px-2 py-1 rounded">Current</span>' :
                                   '<span class="ml-2 text-xs bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100 px-2 py-1 rounded">Future</span>'}
-                                ${!isFutureYear ? `<button onclick="event.stopPropagation(); calculator.zeroAllMonths(${year})" class="ml-4 text-xs bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-100 px-2 py-1 rounded hover:bg-red-200 dark:hover:bg-red-700">
+                                ${yearData.isManualOverride ? '<span class="ml-2 text-xs bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100 px-2 py-1 rounded">Manual</span>' : ''}
+                                ${isPastYear ? `<button onclick="event.stopPropagation(); calculator.editYearEndValue(${year})" class="ml-4 text-xs bg-purple-100 text-purple-700 dark:bg-purple-800 dark:text-purple-100 px-2 py-1 rounded hover:bg-purple-200 dark:hover:bg-purple-700">
+                                    <i class="fas fa-edit mr-1"></i>Edit Value
+                                </button>` : ''}
+                                ${!isFutureYear ? `<button onclick="event.stopPropagation(); calculator.zeroAllMonths(${year})" class="ml-2 text-xs bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-100 px-2 py-1 rounded hover:bg-red-200 dark:hover:bg-red-700">
                                     <i class="fas fa-times mr-1"></i>Zero Year
                                 </button>` : ''}
                             </div>
                             <div class="text-right">
                                 <p class="text-sm text-gray-600 dark:text-gray-400">Year End: ${this.formatCurrencyForInvestment(inv, yearData.yearEndValue)}</p>
+                                ${yearData.isManualOverride ? `<p class="text-xs text-orange-600 dark:text-orange-400">Actual: ${this.formatCurrencyForInvestment(inv, yearData.actualYearEndValue)}</p>` : ''}
                                 <p class="text-xs text-green-600 dark:text-green-400">Returns: ${this.formatCurrencyForInvestment(inv, yearData.yearlyReturns)}</p>
                             </div>
                         </div>
@@ -401,6 +408,7 @@ class AdvancedInvestmentCalculator {
                                 <div>
                                     <p class="text-gray-600 dark:text-gray-400">Year End Value</p>
                                     <p class="font-semibold">${this.formatCurrencyForInvestment(inv, yearData.yearEndValue)}</p>
+                                    ${yearData.isManualOverride ? `<p class="text-xs text-orange-600 dark:text-orange-400">Manual: ${this.formatCurrencyForInvestment(inv, yearData.actualYearEndValue)}</p>` : ''}
                                 </div>
                                 <div>
                                     <p class="text-gray-600 dark:text-gray-400">Yearly Returns</p>
@@ -495,6 +503,125 @@ class AdvancedInvestmentCalculator {
         container.innerHTML = html;
     }
 
+    // Edit year end value for past years
+    editYearEndValue(year) {
+        const inv = this.currentInvestment;
+        const yearData = inv.yearlyData[year];
+        
+        // Create modal for editing year end value
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+        modal.innerHTML = `
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-800 dark:text-white">
+                            <i class="fas fa-edit text-purple-600 mr-2"></i>
+                            Edit Year ${year} End Value
+                        </h3>
+                        <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                Calculated Year End Value
+                            </label>
+                            <div class="px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                                ${this.formatCurrencyForInvestment(inv, yearData.yearEndValue)}
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                Actual Year End Value
+                            </label>
+                            <input type="number" 
+                                id="actualYearEndValue" 
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white" 
+                                value="${yearData.actualYearEndValue || yearData.yearEndValue}" 
+                                placeholder="Enter actual year end value"
+                                step="0.01">
+                        </div>
+                        
+                        <div class="bg-blue-50 dark:bg-blue-900 rounded-lg p-3">
+                            <p class="text-sm text-blue-800 dark:text-blue-200">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                This will override the calculated year end value and use the actual value for future calculations.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3">
+                        <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                            Cancel
+                        </button>
+                        <button onclick="calculator.saveYearEndValue(${year}, document.getElementById('actualYearEndValue').value)" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+                            <i class="fas fa-save mr-2"></i>Save Value
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Close on outside click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+    }
+
+    // Save edited year end value
+    saveYearEndValue(year, actualValue) {
+        const inv = this.currentInvestment;
+        const yearData = inv.yearlyData[year];
+        const parsedValue = parseFloat(actualValue);
+        
+        if (isNaN(parsedValue) || parsedValue < 0) {
+            this.showNotification('Please enter a valid positive number', 'error');
+            return;
+        }
+        
+        // Update year data
+        yearData.actualYearEndValue = parsedValue;
+        yearData.isManualOverride = true;
+        
+        // Recalculate investment with new manual override
+        this.recalculateInvestment(inv);
+        this.saveToStorage();
+        this.updateInvestmentDetails();
+        this.createYearAccordion();
+        
+        // Close modal
+        document.querySelector('.fixed').remove();
+        
+        this.showNotification(`Year ${year} end value updated successfully`, 'success');
+    }
+
+    // Reset manual override for a year
+    resetYearEndValue(year) {
+        const inv = this.currentInvestment;
+        const yearData = inv.yearlyData[year];
+        
+        if (confirm(`Reset year ${year} to calculated value? This will remove your manual override.`)) {
+            yearData.actualYearEndValue = null;
+            yearData.isManualOverride = false;
+            
+            // Recalculate investment
+            this.recalculateInvestment(inv);
+            this.saveToStorage();
+            this.updateInvestmentDetails();
+            this.createYearAccordion();
+            
+            this.showNotification(`Year ${year} reset to calculated value`, 'success');
+        }
+    }
+
     toggleAccordion(year) {
         const content = document.getElementById(`accordion-${year}`);
         const chevron = document.getElementById(`chevron-${year}`);
@@ -502,7 +629,6 @@ class AdvancedInvestmentCalculator {
         content.classList.toggle('active');
         chevron.classList.toggle('rotate-90');
     }
-
     // Monthly Contribution Management
     updateMonthlyContribution(year, monthIndex, value) {
         const inv = this.currentInvestment;
@@ -550,7 +676,7 @@ class AdvancedInvestmentCalculator {
         }
     }
 
-    // SIP Calculation (existing logic)
+    // SIP Calculation (existing logic with manual override support)
     recalculateSIP(investment) {
         const monthlyReturn = investment.annualReturn / 100 / 12;
         let currentValue = 0;
@@ -575,32 +701,48 @@ class AdvancedInvestmentCalculator {
             calculationLogs.push(`\n--- Year ${year} ---`);
             calculationLogs.push(`Starting Value: ${this.formatCurrencyForInvestment(investment, currentValue)}`);
             
-            // Calculate monthly contributions and growth
-            let yearEndValue = currentValue;
-            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            
-            for (let month = 0; month < 12; month++) {
-                const contribution = parseFloat(yearData.contributions[month]) || 0;
-                totalInvested += contribution;
-                const beforeGrowth = yearEndValue + contribution;
-                yearEndValue = beforeGrowth * (1 + monthlyReturn);
-                const monthlyGrowth = yearEndValue - beforeGrowth;
+            // Check if this year has manual override
+            if (yearData.isManualOverride && yearData.actualYearEndValue !== null) {
+                // Use manual override value
+                const yearTotalContributed = yearData.contributions.reduce((sum, val) => sum + parseFloat(val || 0), 0);
+                totalInvested += yearTotalContributed;
                 
-                calculationLogs.push(`${monthNames[month]}: Contributed ${this.formatCurrencyForInvestment(investment, contribution)}, Growth ${this.formatCurrencyForInvestment(investment, monthlyGrowth)}, End: ${this.formatCurrencyForInvestment(investment, yearEndValue)}`);
+                yearData.yearEndValue = yearData.actualYearEndValue;
+                yearData.yearlyReturns = yearData.actualYearEndValue - currentValue - yearTotalContributed;
+                currentValue = yearData.actualYearEndValue;
+                
+                calculationLogs.push(`MANUAL OVERRIDE: Using actual year end value: ${this.formatCurrencyForInvestment(investment, yearData.actualYearEndValue)}`);
+                calculationLogs.push(`Total Contributed: ${this.formatCurrencyForInvestment(investment, yearTotalContributed)}`);
+                calculationLogs.push(`Year Returns: ${this.formatCurrencyForInvestment(investment, yearData.yearlyReturns)}`);
+                calculationLogs.push(`Year End Value: ${this.formatCurrencyForInvestment(investment, yearData.yearEndValue)}`);
+            } else {
+                // Use calculated value
+                let yearEndValue = currentValue;
+                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                
+                for (let month = 0; month < 12; month++) {
+                    const contribution = parseFloat(yearData.contributions[month]) || 0;
+                    totalInvested += contribution;
+                    const beforeGrowth = yearEndValue + contribution;
+                    yearEndValue = beforeGrowth * (1 + monthlyReturn);
+                    const monthlyGrowth = yearEndValue - beforeGrowth;
+                    
+                    calculationLogs.push(`${monthNames[month]}: Contributed ${this.formatCurrencyForInvestment(investment, contribution)}, Growth ${this.formatCurrencyForInvestment(investment, monthlyGrowth)}, End: ${this.formatCurrencyForInvestment(investment, yearEndValue)}`);
+                }
+                
+                // Update year data
+                yearData.yearEndValue = yearEndValue;
+                const yearTotalContributed = yearData.contributions.reduce((sum, val) => sum + parseFloat(val || 0), 0);
+                yearData.yearlyReturns = yearEndValue - currentValue - yearTotalContributed;
+                
+                calculationLogs.push(`Year ${year} Summary:`);
+                calculationLogs.push(`  Total Contributed: ${this.formatCurrencyForInvestment(investment, yearTotalContributed)}`);
+                calculationLogs.push(`  Year Growth: ${this.formatCurrencyForInvestment(investment, yearData.yearlyReturns)}`);
+                calculationLogs.push(`  Year End Value: ${this.formatCurrencyForInvestment(investment, yearData.yearEndValue)}`);
+                
+                // Set current value for next year
+                currentValue = yearEndValue;
             }
-            
-            // Update year data
-            yearData.yearEndValue = yearEndValue;
-            const yearTotalContributed = yearData.contributions.reduce((sum, val) => sum + parseFloat(val || 0), 0);
-            yearData.yearlyReturns = yearEndValue - currentValue - yearTotalContributed;
-            
-            calculationLogs.push(`Year ${year} Summary:`);
-            calculationLogs.push(`  Total Contributed: ${this.formatCurrencyForInvestment(investment, yearTotalContributed)}`);
-            calculationLogs.push(`  Year Growth: ${this.formatCurrencyForInvestment(investment, yearData.yearlyReturns)}`);
-            calculationLogs.push(`  Year End Value: ${this.formatCurrencyForInvestment(investment, yearData.yearEndValue)}`);
-            
-            // Set current value for next year
-            currentValue = yearEndValue;
         }
 
         calculationLogs.push(`\n=== Final Summary ===`);
