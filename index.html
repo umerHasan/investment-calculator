@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Investment Calculator - Plan Your Financial Future</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a'
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(10px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .dark .glass-effect {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .accordion-content.active {
+            max-height: 2000px;
+            transition: max-height 0.5s ease-in;
+        }
+        .month-input {
+            transition: all 0.2s ease;
+        }
+        .month-input:focus {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 min-h-screen transition-colors duration-300">
+    <!-- Header -->
+    <header class="glass-effect sticky top-0 z-50 shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-chart-line text-3xl text-primary-600 dark:text-primary-400"></i>
+                    <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Advanced Investment Calculator</h1>
+                </div>
+                <button id="themeToggle" class="p-2 rounded-lg bg-white dark:bg-gray-700 shadow-md hover:shadow-lg transition-all duration-200">
+                    <i class="fas fa-moon text-gray-600 dark:text-yellow-400"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Portfolio Overview -->
+        <section class="mb-8">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800 dark:text-white">
+                        <i class="fas fa-briefcase text-primary-600 mr-3"></i>
+                        Investment Portfolio
+                    </h2>
+                    <button id="createInvestment" class="bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg">
+                        <i class="fas fa-plus mr-2"></i>New Investment
+                    </button>
+                </div>
+                
+                <!-- Portfolio Summary -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-gray-700 dark:to-gray-600 rounded-lg p-4">
+                        <p class="text-sm text-gray-600 dark:text-gray-300">Total Investments</p>
+                        <p id="totalInvestments" class="text-2xl font-bold text-gray-800 dark:text-white">0</p>
+                    </div>
+                    <div class="bg-gradient-to-r from-green-50 to-green-100 dark:from-gray-700 dark:to-gray-600 rounded-lg p-4">
+                        <p class="text-sm text-gray-600 dark:text-gray-300">Total Invested</p>
+                        <p id="totalInvested" class="text-2xl font-bold text-green-600 dark:text-green-400">Rs0</p>
+                    </div>
+                    <div class="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-gray-700 dark:to-gray-600 rounded-lg p-4">
+                        <p class="text-sm text-gray-600 dark:text-gray-300">Current Value</p>
+                        <p id="currentValue" class="text-2xl font-bold text-purple-600 dark:text-purple-400">Rs0</p>
+                    </div>
+                    <div class="bg-gradient-to-r from-orange-50 to-orange-100 dark:from-gray-700 dark:to-gray-600 rounded-lg p-4">
+                        <p class="text-sm text-gray-600 dark:text-gray-300">Total Returns</p>
+                        <p id="totalReturns" class="text-2xl font-bold text-orange-600 dark:text-orange-400">Rs0</p>
+                    </div>
+                </div>
+
+                <!-- Investments List -->
+                <div id="investmentsList" class="space-y-4">
+                    <p class="text-center text-gray-500 dark:text-gray-400 py-8">No investments yet. Create your first investment to get started!</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Investment Creation Modal -->
+        <div id="investmentModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold text-gray-800 dark:text-white">Create New Investment</h3>
+                        <button id="closeModal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <form id="investmentForm" class="space-y-6">
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-tag mr-2"></i>Investment Name
+                                </label>
+                                <input type="text" id="investmentName" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white" placeholder="e.g., Stocks SIP, Money Market" required>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-dollar-sign mr-2"></i>Currency
+                                </label>
+                                <select id="currency" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+                                    <option value="PKR">Rs - Pakistani Rupee</option>
+                                    <option value="USD">USD - US Dollar</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="grid md:grid-cols-3 gap-6">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-calendar mr-2"></i>Start Year
+                                </label>
+                                <input type="number" id="startYear" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white" min="2020" max="2030" value="2023" required>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-clock mr-2"></i>Investment Period (Years)
+                                </label>
+                                <input type="number" id="investmentPeriod" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white" min="1" max="30" value="10" required>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-percentage mr-2"></i>Annual Return (%)
+                                </label>
+                                <input type="number" id="annualReturn" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white" min="1" max="30" step="0.1" value="12" required>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-coins mr-2"></i>Initial Monthly Amount
+                            </label>
+                            <input type="number" id="initialAmount" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white" placeholder="25000" min="0" value="25000">
+                        </div>
+                        
+                        <div class="flex justify-end space-x-4">
+                            <button type="button" id="cancelBtn" class="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                Cancel
+                            </button>
+                            <button type="submit" class="bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2 px-6 rounded-lg transition-all duration-200">
+                                <i class="fas fa-check mr-2"></i>Create Investment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Investment Details Section -->
+        <section id="investmentDetails" class="hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 id="detailTitle" class="text-2xl font-bold text-gray-800 dark:text-white"></h2>
+                    <div class="flex space-x-2">
+                        <button id="pauseInvestment" class="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
+                            <i class="fas fa-pause mr-2"></i>Pause
+                        </button>
+                        <button id="stopInvestment" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
+                            <i class="fas fa-stop mr-2"></i>Stop
+                        </button>
+                        <button id="backToPortfolio" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
+                            <i class="fas fa-arrow-left mr-2"></i>Back
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Investment Summary -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-gray-700 dark:to-gray-600 rounded-lg p-4">
+                        <p class="text-sm text-gray-600 dark:text-gray-300">Status</p>
+                        <p id="investmentStatus" class="text-lg font-bold text-gray-800 dark:text-white">Active</p>
+                    </div>
+                    <div class="bg-gradient-to-r from-green-50 to-green-100 dark:from-gray-700 dark:to-gray-600 rounded-lg p-4">
+                        <p class="text-sm text-gray-600 dark:text-gray-300">Total Invested</p>
+                        <p id="detailInvested" class="text-lg font-bold text-green-600 dark:text-green-400">Rs0</p>
+                    </div>
+                    <div class="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-gray-700 dark:to-gray-600 rounded-lg p-4">
+                        <p class="text-sm text-gray-600 dark:text-gray-300">Current Value</p>
+                        <p id="detailValue" class="text-lg font-bold text-purple-600 dark:text-purple-400">Rs0</p>
+                    </div>
+                    <div class="bg-gradient-to-r from-orange-50 to-orange-100 dark:from-gray-700 dark:to-gray-600 rounded-lg p-4">
+                        <p class="text-sm text-gray-600 dark:text-gray-300">Returns</p>
+                        <p id="detailReturns" class="text-lg font-bold text-orange-600 dark:text-orange-400">Rs0</p>
+                    </div>
+                </div>
+
+                <!-- Year-wise Accordion -->
+                <div id="yearAccordion" class="space-y-4">
+                    <!-- Years will be dynamically added here -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="glass-effect mt-16">
+        <div class="container mx-auto px-4 py-6">
+            <div class="text-center text-gray-600 dark:text-gray-400">
+                <p>&copy; 2024 Advanced Investment Calculator. Plan your financial future with confidence.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
