@@ -44,7 +44,6 @@ class AdvancedInvestmentCalculator {
 
     // Event Listeners
     setupEventListeners() {
-        // Theme toggle
         document.getElementById('themeToggle').addEventListener('click', () => this.toggleTheme());
 
         // Modal controls
@@ -55,11 +54,9 @@ class AdvancedInvestmentCalculator {
         // Investment form
         document.getElementById('investmentForm').addEventListener('submit', (e) => this.handleCreateInvestment(e));
         
-        // Investment detail controls
+        // Back to portfolio button
         document.getElementById('backToPortfolio').addEventListener('click', () => this.showPortfolio());
-        document.getElementById('pauseInvestment').addEventListener('click', () => this.pauseInvestment());
-        document.getElementById('stopInvestment').addEventListener('click', () => this.stopInvestment());
-
+        
         // Close modal on outside click
         document.getElementById('investmentModal').addEventListener('click', (e) => {
             if (e.target.id === 'investmentModal') {
@@ -227,25 +224,6 @@ class AdvancedInvestmentCalculator {
         document.getElementById('detailValue').textContent = this.formatCurrencyForInvestment(inv, inv.currentValue);
         document.getElementById('detailReturns').textContent = this.formatCurrencyForInvestment(inv, inv.totalReturns);
 
-        // Update button states
-        const pauseBtn = document.getElementById('pauseInvestment');
-        const stopBtn = document.getElementById('stopInvestment');
-        
-        if (inv.status === 'stopped') {
-            pauseBtn.disabled = true;
-            stopBtn.disabled = true;
-            pauseBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            stopBtn.classList.add('opacity-50', 'cursor-not-allowed');
-        } else if (inv.status === 'paused') {
-            pauseBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Resume';
-            pauseBtn.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
-            pauseBtn.classList.add('bg-green-500', 'hover:bg-green-600');
-        } else {
-            pauseBtn.innerHTML = '<i class="fas fa-pause mr-2"></i>Pause';
-            pauseBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
-            pauseBtn.classList.add('bg-yellow-500', 'hover:bg-yellow-600');
-        }
-
         // Add calculation logs button
         this.addCalculationLogsButton();
     }
@@ -377,38 +355,6 @@ class AdvancedInvestmentCalculator {
         this.saveToStorage();
         this.updateInvestmentDetails();
         this.createYearAccordion();
-    }
-
-    // Investment Control
-    pauseInvestment() {
-        if (this.currentInvestment.status === 'paused') {
-            this.currentInvestment.status = 'active';
-            this.showNotification('Investment resumed', 'success');
-        } else {
-            this.currentInvestment.status = 'paused';
-            this.showNotification('Investment paused', 'info');
-        }
-        this.saveToStorage();
-        this.updateInvestmentDetails();
-        this.displayPortfolio();
-    }
-
-    stopInvestment() {
-        if (confirm('Are you sure you want to stop this investment? The existing amount will continue to grow but no more contributions will be accepted.')) {
-            this.currentInvestment.status = 'stopped';
-            // Zero out all future contributions
-            const currentYear = new Date().getFullYear();
-            for (let year = currentYear + 1; year <= this.currentInvestment.endYear; year++) {
-                if (this.currentInvestment.yearlyData[year]) {
-                    this.currentInvestment.yearlyData[year].contributions = new Array(12).fill(0);
-                }
-            }
-            this.recalculateInvestment(this.currentInvestment);
-            this.saveToStorage();
-            this.updateInvestmentDetails();
-            this.displayPortfolio();
-            this.showNotification('Investment stopped', 'warning');
-        }
     }
 
     deleteInvestment(investmentId) {
