@@ -18,6 +18,12 @@ class AdvancedInvestmentCalculator {
         const stored = localStorage.getItem('advancedInvestments');
         if (stored) {
             this.investments = JSON.parse(stored);
+            // Migrate existing investments to SIP type if they don't have a type
+            this.investments.forEach(inv => {
+                if (!inv.type) {
+                    inv.type = 'sip';
+                }
+            });
         }
     }
 
@@ -75,18 +81,55 @@ class AdvancedInvestmentCalculator {
         document.getElementById('investmentModal').classList.add('hidden');
     }
 
+    // Toggle investment type fields
+    toggleInvestmentTypeFields() {
+        const investmentType = document.getElementById('investmentType').value;
+        const sipFields = document.querySelectorAll('#sipFields, #sipInitialAmount');
+        const insuranceFields = document.querySelectorAll('#insuranceFields, #insuranceDetails');
+        
+        if (investmentType === 'sip') {
+            sipFields.forEach(field => field.classList.remove('hidden'));
+            insuranceFields.forEach(field => field.classList.add('hidden'));
+            // Make SIP fields required
+            document.getElementById('annualReturn').required = true;
+            document.getElementById('initialAmount').required = true;
+            // Make insurance fields not required
+            document.getElementById('premiumAmount').required = false;
+            document.getElementById('maturityValue').required = false;
+        } else {
+            sipFields.forEach(field => field.classList.add('hidden'));
+            insuranceFields.forEach(field => field.classList.remove('hidden'));
+            // Make insurance fields required
+            document.getElementById('premiumAmount').required = true;
+            document.getElementById('maturityValue').required = true;
+            // Make SIP fields not required
+            document.getElementById('annualReturn').required = false;
+            document.getElementById('initialAmount').required = false;
+        }
+    }
+
     // Investment Creation
     handleCreateInvestment(e) {
         e.preventDefault();
         
-        const formData = {
+        const investmentType = document.getElementById('investmentType').value;
+        
+        let formData = {
+            type: investmentType,
             name: document.getElementById('investmentName').value,
             currency: document.getElementById('currency').value,
             startYear: parseInt(document.getElementById('startYear').value),
-            period: parseInt(document.getElementById('investmentPeriod').value),
-            annualReturn: parseFloat(document.getElementById('annualReturn').value),
-            initialAmount: parseFloat(document.getElementById('initialAmount').value) || 0
+            period: parseInt(document.getElementById('investmentPeriod').value)
         };
+
+        if (investmentType === 'sip') {
+            formData.annualReturn = parseFloat(document.getElementById('annualReturn').value);
+            formData.initialAmount = parseFloat(document.getElementById('initialAmount').value) || 0;
+        } else if (investmentType === 'insurance') {
+            formData.premiumAmount = parseFloat(document.getElementById('premiumAmount').value);
+            formData.premiumFrequency = document.getElementById('premiumFrequency').value;
+            formData.maturityValue = parseFloat(document.getElementById('maturityValue').value);
+        }
 
         const investment = this.createInvestmentStructure(formData);
         this.investments.push(investment);
@@ -99,6 +142,7 @@ class AdvancedInvestmentCalculator {
     createInvestmentStructure(data) {
         const investment = {
             id: Date.now(),
+            type: data.type || 'sip', // 'sip' or 'insurance'
             name: data.name,
             currency: data.currency,
             startYear: data.startYear,
@@ -112,18 +156,53 @@ class AdvancedInvestmentCalculator {
             createdAt: new Date().toISOString()
         };
 
+        // Add insurance-specific fields if type is insurance
+        if (data.type === 'insurance') {
+            investment.premiumAmount = data.premiumAmount;
+            investment.premiumFrequency = data.premiumFrequency; // 'monthly' or 'annual'
+            investment.maturityValue = data.maturityValue;
+            // Remove annualReturn for insurance as it's not used
+            delete investment.annualReturn;
+        }
+
         const currentYear = new Date().getFullYear();
         
         // Initialize yearly data structure
         for (let year = data.startYear; year <= data.startYear + data.period - 1; year++) {
             const isFutureYear = year > currentYear;
-            investment.yearlyData[year] = {
-                contributions: new Array(12).fill(isFutureYear ? 0 : data.initialAmount),
-                yearStartValue: 0,
-                yearEndValue: 0,
-                yearlyReturns: 0,
-                isComplete: false
-            };
+            
+            if (data.type === 'insurance') {
+                // Insurance: Fixed premiums
+                const monthlyPremium = data.premiumFrequency === 'monthly' ? data.premiumAmount : data.premiumAmount / 12;
+                investment.yearlyData[year] = {
+                    contributions: new Array(12).fill(isFutureYear ? 0 : monthlyPremium),
+                    yearStartValue: 0,
+                    yearEndValue: 0,
+                    yearlyReturns: 0,
+                    isComplete: false
+                };
+            } else {
+                // SIP: Variable contributions
+                investment.yearlyData[year] = {
+                    contributions: new Array(12).fill(isFutureYear ? 0 : data.initialAmount),
+                    yearStartValue: 0,
+                    yearEndValue: 0,
+                    yearlyReturns: 0,
+                    isComplete: false
+                };
+            }
+        }
+
+        // Calculate initial values for insurance
+        if (data.type === 'insurance') {
+            // For insurance, set all years (including current) to have premiums for calculation
+            for (let year = data.startYear; year <= data.startYear + data.period - 1; year++) {
+                if (year <= currentYear) {
+                    const monthlyPremium = data.premiumFrequency === 'monthly' ? data.premiumAmount : data.premiumAmount / 12;
+                    investment.yearlyData[year].contributions = new Array(12).fill(monthlyPremium);
+                }
+            }
+            this.recalculateInvestment(investment);
         }
 
         return investment;
@@ -160,7 +239,14 @@ class AdvancedInvestmentCalculator {
                 <div class="flex justify-between items-start">
                     <div class="flex-1">
                         <div class="flex items-center mb-2">
+                            <i class="fas ${inv.type === 'insurance' ? 'fa-shield-alt text-blue-600' : 'fa-chart-line text-green-600'} mr-2"></i>
                             <h3 class="text-lg font-semibold text-gray-800 dark:text-white mr-3">${inv.name}</h3>
+                            <span class="px-2 py-1 text-xs font-medium rounded-full ${
+                                inv.type === 'insurance' ? 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100' :
+                                'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
+                            }">
+                                ${inv.type === 'insurance' ? 'Insurance' : 'SIP'}
+                            </span>
                             <span class="px-2 py-1 text-xs font-medium rounded-full ${
                                 inv.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100' :
                                 inv.status === 'paused' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100' :
@@ -170,7 +256,7 @@ class AdvancedInvestmentCalculator {
                             </span>
                         </div>
                         <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                            ${inv.startYear} - ${inv.endYear} • ${inv.annualReturn}% annual return
+                            ${inv.startYear} - ${inv.endYear} ${inv.type === 'sip' ? `• ${inv.annualReturn}% annual return` : `• ${inv.premiumFrequency} premiums`}
                         </p>
                         <div class="grid grid-cols-3 gap-4">
                             <div>
@@ -178,7 +264,7 @@ class AdvancedInvestmentCalculator {
                                 <p class="font-semibold text-gray-800 dark:text-white">${this.formatCurrencyForInvestment(inv, inv.totalInvested)}</p>
                             </div>
                             <div>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">Current Value</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">${inv.type === 'insurance' ? 'Maturity Value' : 'Current Value'}</p>
                                 <p class="font-semibold text-primary-600 dark:text-primary-400">${this.formatCurrencyForInvestment(inv, inv.currentValue)}</p>
                             </div>
                             <div>
@@ -233,6 +319,16 @@ class AdvancedInvestmentCalculator {
         const inv = this.currentInvestment;
         const currentYear = new Date().getFullYear();
         
+        if (inv.type === 'insurance') {
+            // Insurance: Show premium schedule instead of contribution grid
+            this.createInsuranceAccordion(container, inv, currentYear);
+        } else {
+            // SIP: Show existing contribution grid
+            this.createSIPAccordion(container, inv, currentYear);
+        }
+    }
+
+    createSIPAccordion(container, inv, currentYear) {
         let html = '';
         for (let year = inv.startYear; year <= inv.endYear; year++) {
             const yearData = inv.yearlyData[year];
@@ -320,6 +416,85 @@ class AdvancedInvestmentCalculator {
         container.innerHTML = html;
     }
 
+    createInsuranceAccordion(container, inv, currentYear) {
+        let html = '';
+        for (let year = inv.startYear; year <= inv.endYear; year++) {
+            const yearData = inv.yearlyData[year];
+            const isPastYear = year < currentYear;
+            const isCurrentYear = year === currentYear;
+            const isFutureYear = year > currentYear;
+            const yearTotalContributed = yearData.contributions.reduce((sum, val) => sum + parseFloat(val || 0), 0);
+            
+            html += `
+                <div class="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+                    <div class="accordion-header bg-gray-50 dark:bg-gray-700 p-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors" onclick="calculator.toggleAccordion(${year})">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center">
+                                <i class="fas fa-chevron-right mr-3 transition-transform" id="chevron-${year}"></i>
+                                <h4 class="font-semibold text-gray-800 dark:text-white">${year}</h4>
+                                ${isPastYear ? '<span class="ml-2 text-xs bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 px-2 py-1 rounded">Complete</span>' : 
+                                  isCurrentYear ? '<span class="ml-2 text-xs bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100 px-2 py-1 rounded">Current</span>' :
+                                  '<span class="ml-2 text-xs bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100 px-2 py-1 rounded">Future</span>'}
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm text-gray-600 dark:text-gray-400">Year End: ${this.formatCurrencyForInvestment(inv, yearData.yearEndValue)}</p>
+                                <p class="text-xs text-blue-600 dark:text-blue-400">Maturity Value: ${this.formatCurrencyForInvestment(inv, inv.maturityValue)}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-content ${!isFutureYear ? 'active' : ''}" id="accordion-${year}">
+                        <div class="p-4 bg-white dark:bg-gray-800">
+                            <div class="mb-4">
+                                <h5 class="font-medium text-gray-700 dark:text-gray-300 mb-3">Premium Payment Schedule</h5>
+                                <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                                    ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, index) => `
+                                        <div class="text-center">
+                                            <label class="text-xs text-gray-600 dark:text-gray-400 block mb-1">${month}</label>
+                                            <div class="px-2 py-1 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-center">
+                                                ${this.formatCurrencyForInvestment(inv, yearData.contributions[index])}
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                                <div>
+                                    <p class="text-gray-600 dark:text-gray-400">Yearly Premiums</p>
+                                    <p class="font-semibold">${this.formatCurrencyForInvestment(inv, yearTotalContributed)}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-600 dark:text-gray-400">Premium Frequency</p>
+                                    <p class="font-semibold capitalize">${inv.premiumFrequency}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-600 dark:text-gray-400">Maturity Year</p>
+                                    <p class="font-semibold">${inv.endYear}</p>
+                                </div>
+                            </div>
+                            ${year === inv.endYear ? `
+                                <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
+                                    <h5 class="font-medium text-blue-800 dark:text-blue-200 mb-2">Maturity Information</h5>
+                                    <div class="grid grid-cols-2 gap-4 text-sm">
+                                        <div>
+                                            <p class="text-blue-600 dark:text-blue-400">Total Premiums Paid</p>
+                                            <p class="font-semibold text-blue-800 dark:text-blue-100">${this.formatCurrencyForInvestment(inv, inv.totalInvested)}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-blue-600 dark:text-blue-400">Guaranteed Maturity Value</p>
+                                            <p class="font-semibold text-blue-800 dark:text-blue-100">${this.formatCurrencyForInvestment(inv, inv.maturityValue)}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        container.innerHTML = html;
+    }
+
     toggleAccordion(year) {
         const content = document.getElementById(`accordion-${year}`);
         const chevron = document.getElementById(`chevron-${year}`);
@@ -368,6 +543,15 @@ class AdvancedInvestmentCalculator {
 
     // Advanced Calculation Engine with detailed logging
     recalculateInvestment(investment) {
+        if (investment.type === 'insurance') {
+            this.recalculateInsurance(investment);
+        } else {
+            this.recalculateSIP(investment);
+        }
+    }
+
+    // SIP Calculation (existing logic)
+    recalculateSIP(investment) {
         const monthlyReturn = investment.annualReturn / 100 / 12;
         let currentValue = 0;
         let totalInvested = 0;
@@ -376,7 +560,7 @@ class AdvancedInvestmentCalculator {
         // Sort years to ensure proper calculation order
         const years = Object.keys(investment.yearlyData).map(Number).sort((a, b) => a - b);
 
-        calculationLogs.push(`=== ${investment.name} Calculation Log ===`);
+        calculationLogs.push(`=== ${investment.name} SIP Calculation Log ===`);
         calculationLogs.push(`Annual Return: ${investment.annualReturn}% | Monthly Return: ${(monthlyReturn * 100).toFixed(4)}%`);
 
         for (let i = 0; i < years.length; i++) {
@@ -431,6 +615,61 @@ class AdvancedInvestmentCalculator {
         investment.totalInvested = totalInvested;
         investment.currentValue = currentValue;
         investment.totalReturns = currentValue - totalInvested;
+    }
+
+    // Insurance Calculation (simple logic)
+    recalculateInsurance(investment) {
+        const calculationLogs = [];
+        const years = Object.keys(investment.yearlyData).map(Number).sort((a, b) => a - b);
+        
+        calculationLogs.push(`=== ${investment.name} Insurance Calculation Log ===`);
+        calculationLogs.push(`Premium Amount: ${this.formatCurrencyForInvestment(investment, investment.premiumAmount)} (${investment.premiumFrequency})`);
+        calculationLogs.push(`Guaranteed Maturity Value: ${this.formatCurrencyForInvestment(investment, investment.maturityValue)}`);
+
+        let totalInvested = 0;
+        const currentYear = new Date().getFullYear();
+
+        for (let i = 0; i < years.length; i++) {
+            const year = years[i];
+            const yearData = investment.yearlyData[year];
+            
+            // Ensure all contributions are numbers
+            yearData.contributions = yearData.contributions.map(val => parseFloat(val) || 0);
+            
+            // Calculate yearly premium total
+            const yearTotalContributed = yearData.contributions.reduce((sum, val) => sum + parseFloat(val || 0), 0);
+            
+            // Only add to total invested if year is not in the future
+            if (year <= currentYear) {
+                totalInvested += yearTotalContributed;
+            }
+            
+            calculationLogs.push(`\n--- Year ${year} ---`);
+            calculationLogs.push(`Premiums This Year: ${this.formatCurrencyForInvestment(investment, yearTotalContributed)}`);
+            calculationLogs.push(`Total Premiums to Date: ${this.formatCurrencyForInvestment(investment, totalInvested)}`);
+            
+            // Update year data
+            yearData.yearStartValue = investment.maturityValue; // Insurance shows maturity value from start
+            yearData.yearEndValue = investment.maturityValue; // Always show maturity value
+            yearData.yearlyReturns = 0; // No returns during term (maturity value is fixed)
+        }
+
+        // For insurance, current value is always the maturity value
+        const currentValue = investment.maturityValue;
+        const totalReturns = currentValue - totalInvested;
+
+        calculationLogs.push(`\n=== Final Summary ===`);
+        calculationLogs.push(`Total Premiums Paid: ${this.formatCurrencyForInvestment(investment, totalInvested)}`);
+        calculationLogs.push(`Guaranteed Maturity Value: ${this.formatCurrencyForInvestment(investment, currentValue)}`);
+        calculationLogs.push(`Total Returns: ${this.formatCurrencyForInvestment(investment, totalReturns)}`);
+
+        // Store calculation logs for display
+        investment.calculationLogs = calculationLogs;
+
+        // Update investment totals
+        investment.totalInvested = totalInvested;
+        investment.currentValue = currentValue;
+        investment.totalReturns = totalReturns;
     }
 
     // Add calculation logs button and modal

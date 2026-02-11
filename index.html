@@ -144,9 +144,21 @@
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                     <i class="fas fa-tag mr-2"></i>Investment Name
                                 </label>
-                                <input type="text" id="investmentName" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white" placeholder="e.g., Stocks SIP, Money Market" required>
+                                <input type="text" id="investmentName" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white" placeholder="e.g., Stocks SIP, Life Insurance" required>
                             </div>
                             
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-list mr-2"></i>Investment Type
+                                </label>
+                                <select id="investmentType" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white" onchange="calculator.toggleInvestmentTypeFields()">
+                                    <option value="sip">SIP Investment</option>
+                                    <option value="insurance">Insurance</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid md:grid-cols-2 gap-6">
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                     <i class="fas fa-dollar-sign mr-2"></i>Currency
@@ -156,16 +168,16 @@
                                     <option value="USD">USD - US Dollar</option>
                                 </select>
                             </div>
-                        </div>
-                        
-                        <div class="grid md:grid-cols-3 gap-6">
+                            
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                     <i class="fas fa-calendar mr-2"></i>Start Year
                                 </label>
                                 <input type="number" id="startYear" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white" min="2020" max="2030" value="2023" required>
                             </div>
-                            
+                        </div>
+                        
+                        <div class="grid md:grid-cols-2 gap-6">
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                     <i class="fas fa-clock mr-2"></i>Investment Period (Years)
@@ -173,19 +185,51 @@
                                 <input type="number" id="investmentPeriod" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white" min="1" max="30" value="10" required>
                             </div>
                             
-                            <div>
+                            <!-- SIP Fields -->
+                            <div id="sipFields">
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                     <i class="fas fa-percentage mr-2"></i>Annual Return (%)
                                 </label>
-                                <input type="number" id="annualReturn" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white" min="1" max="30" step="0.1" value="12" required>
+                                <input type="number" id="annualReturn" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white" min="0" max="50" step="0.1" value="12" required>
+                            </div>
+                            
+                            <!-- Insurance Fields -->
+                            <div id="insuranceFields" class="hidden">
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-shield-alt mr-2"></i>Premium Frequency
+                                </label>
+                                <select id="premiumFrequency" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+                                    <option value="monthly">Monthly</option>
+                                    <option value="annual">Annual</option>
+                                </select>
                             </div>
                         </div>
-                        
-                        <div>
+
+                        <!-- SIP Initial Amount -->
+                        <div id="sipInitialAmount">
                             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                <i class="fas fa-coins mr-2"></i>Initial Monthly Amount
+                                <i class="fas fa-money-bill-wave mr-2"></i>Initial Monthly Amount
                             </label>
-                            <input type="number" id="initialAmount" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white" placeholder="25000" min="0" value="25000">
+                            <input type="number" id="initialAmount" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white" min="0" value="25000" required>
+                        </div>
+
+                        <!-- Insurance Fields -->
+                        <div id="insuranceDetails" class="hidden space-y-6">
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        <i class="fas fa-money-bill-wave mr-2"></i>Premium Amount
+                                    </label>
+                                    <input type="number" id="premiumAmount" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white" min="0" placeholder="Enter premium amount">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        <i class="fas fa-hand-holding-usd mr-2"></i>Maturity Value
+                                    </label>
+                                    <input type="number" id="maturityValue" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white" min="0" placeholder="Enter guaranteed maturity amount">
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="flex justify-end space-x-4">
