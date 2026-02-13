@@ -1,6 +1,6 @@
 # Advanced Investment Calculator
 
-A comprehensive web-based investment calculator that helps you plan and track your financial future with support for both SIP (Systematic Investment Plan) and Insurance investments.
+A comprehensive web-based investment calculator that helps you plan and track your financial future with support for SIP (Systematic Investment Plan), Insurance investments, and advanced multi-asset portfolio analysis.
 
 ## Features
 
@@ -10,7 +10,17 @@ A comprehensive web-based investment calculator that helps you plan and track yo
 - Support for both SIP and Insurance investment types
 - Multi-currency support (PKR, USD)
 
-### 📈 SIP Investment Calculator
+### � **NEW: Investment Analysis Dashboard**
+- **Multi-Asset Analysis**: Add and analyze multiple investments simultaneously
+- **Separate & Cumulative Insights**: View individual asset performance and portfolio-wide metrics
+- **Advanced Calculations**: CAGR, risk-adjusted returns, weighted averages
+- **Comprehensive Metrics**: Profit per year, total percentage returns, benchmark comparisons
+- **Asset Types Support**: Stocks, Money Market, Bonds, Debts, Commodity, Real Estate, Crypto, Mutual Funds, ETF, and more
+- **Risk Assessment**: 5-level risk profiling with risk-adjusted return calculations
+- **Interactive Visualizations**: Performance comparison charts and return distribution analysis
+- **Portfolio Insights**: Weighted risk scores, average investment periods, annual profit metrics
+
+### � SIP Investment Calculator
 - Calculate returns on monthly SIP investments
 - Variable monthly contributions with annual increments
 - Project future value based on expected annual returns
@@ -33,6 +43,7 @@ A comprehensive web-based investment calculator that helps you plan and track yo
 - Export investment data
 - Import investment portfolios
 - Real-time calculations
+- **Asset Analysis Storage**: Save and restore multi-asset analysis sessions
 
 ## Technologies Used
 
@@ -54,6 +65,20 @@ A comprehensive web-based investment calculator that helps you plan and track yo
 3. Start planning your investments!
 
 ### Usage
+
+#### Investment Analysis Dashboard (NEW)
+1. Click the "Analyze" button in the header to access the analysis dashboard
+2. **Add Assets**: Click "Add Asset" to input investment details:
+   - Investment amount and period (years + months)
+   - Asset name and type (stocks, bonds, crypto, etc.)
+   - Risk profile (low to very high)
+   - Current market value
+3. **Manage Assets**: View all added assets in the list, remove individual assets or clear all
+4. **Run Analysis**: Click "Run Analysis" to get comprehensive insights:
+   - **Cumulative Summary**: Total profit, return percentage, weighted annualized return
+   - **Individual Performance**: Detailed analysis for each asset
+   - **Interactive Charts**: Performance comparison and return distribution
+   - **Portfolio Insights**: Risk scores, average periods, annual profit metrics
 
 #### Creating a New Investment
 1. Click the "New Investment" button
@@ -82,10 +107,53 @@ A comprehensive web-based investment calculator that helps you plan and track yo
 
 ```
 investment-calculator/
-├── index.html          # Main HTML file
-├── script.js           # JavaScript application logic
+├── index.html          # Main HTML file with multi-asset analysis dashboard
+├── script.js           # JavaScript application logic with InvestmentAnalysisDashboard class
 └── README.md           # This file
 ```
+
+## Key Components
+
+### InvestmentAnalysisDashboard Class
+- **Multi-Asset Management**: Add, remove, and manage multiple investment assets
+- **Cumulative Analysis Engine**: Calculate portfolio-wide metrics and weighted averages
+- **Interactive Charts**: Performance comparison and distribution visualizations
+- **Risk Assessment**: Advanced risk profiling with benchmark comparisons
+- **Data Persistence**: Save and restore analysis sessions
+
+### AdvancedInvestmentCalculator Class
+- **Portfolio Management**: SIP and Insurance investment tracking
+- **Real-time Calculations**: Dynamic return projections and value tracking
+- **Year-wise Breakdowns**: Detailed monthly and annual investment analysis
+- **Manual Overrides**: Edit actual values for accurate historical tracking
+
+## Analysis Capabilities
+
+### Multi-Asset Portfolio Analysis
+- **CAGR Calculation**: Compound Annual Growth Rate for each asset and portfolio
+- **Risk-Adjusted Returns**: Returns adjusted for risk profile (1-5 scale)
+- **Benchmark Comparison**: Performance vs industry standard returns
+- **Weighted Metrics**: Investment-weighted averages for accurate portfolio analysis
+- **Profit Distribution**: Visual breakdown of profit contribution by asset
+
+### Supported Asset Types
+- **Stocks**: Equity investments with 10% benchmark return
+- **Money Market**: Low-risk investments with 3% benchmark return
+- **Bonds**: Fixed-income securities with 5% benchmark return
+- **Debts**: Debt instruments with 4% benchmark return
+- **Commodity**: Physical goods with 7% benchmark return
+- **Real Estate**: Property investments with 8% benchmark return
+- **Cryptocurrency**: Digital assets with 15% benchmark return
+- **Mutual Funds**: Professional fund management with 8% benchmark return
+- **ETF**: Exchange-traded funds with 9% benchmark return
+- **Other**: Custom investments with 6% benchmark return
+
+### Risk Profiling
+- **Low Risk**: Conservative investments, minimal volatility
+- **Medium Risk**: Balanced approach, moderate growth potential
+- **Moderate Risk**: Standard investment profile
+- **High Risk**: Aggressive growth, higher volatility
+- **Very High Risk**: Speculative investments, maximum volatility
 
 ## Browser Compatibility
 

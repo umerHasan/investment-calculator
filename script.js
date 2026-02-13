@@ -920,3 +920,828 @@ class AdvancedInvestmentCalculator {
 
 // Initialize app
 const calculator = new AdvancedInvestmentCalculator();
+
+// Investment Analysis Dashboard Class
+class InvestmentAnalysisDashboard {
+    constructor() {
+        this.currentAssets = [];
+        this.analyses = [];
+        this.currentAnalysis = null;
+        this.init();
+    }
+
+    init() {
+        this.setupEventListeners();
+        this.loadAnalysesFromStorage();
+        this.loadAssetsFromStorage();
+    }
+
+    // Local Storage Management
+    loadAnalysesFromStorage() {
+        const stored = localStorage.getItem('investmentAnalyses');
+        if (stored) {
+            this.analyses = JSON.parse(stored);
+        }
+    }
+
+    saveAnalysesToStorage() {
+        localStorage.setItem('investmentAnalyses', JSON.stringify(this.analyses));
+    }
+
+    loadAssetsFromStorage() {
+        const stored = localStorage.getItem('currentAnalysisAssets');
+        if (stored) {
+            this.currentAssets = JSON.parse(stored);
+            this.displayAssetsList();
+        }
+    }
+
+    saveAssetsToStorage() {
+        localStorage.setItem('currentAnalysisAssets', JSON.stringify(this.currentAssets));
+    }
+
+    // Event Listeners
+    setupEventListeners() {
+        // Navigation
+        document.getElementById('analyzeBtn').addEventListener('click', () => this.showAnalysisDashboard());
+        document.getElementById('backToPortfolioFromAnalysis').addEventListener('click', () => this.showPortfolio());
+        
+        // Asset management
+        document.getElementById('addNewAsset').addEventListener('click', () => this.showAssetForm());
+        document.getElementById('cancelAssetForm').addEventListener('click', () => this.hideAssetForm());
+        document.getElementById('clearAllAssets').addEventListener('click', () => this.clearAllAssets());
+        document.getElementById('runAnalysis').addEventListener('click', () => this.runCumulativeAnalysis());
+        
+        // Form controls
+        document.getElementById('investmentAnalysisForm').addEventListener('submit', (e) => this.handleAssetSubmit(e));
+    }
+
+    // Navigation Methods
+    showAnalysisDashboard() {
+        // Hide all sections
+        document.querySelector('main > section:first-child').classList.add('hidden');
+        document.getElementById('investmentDetails').classList.add('hidden');
+        document.getElementById('analysisDashboard').classList.remove('hidden');
+        
+        // Reset and load assets
+        this.hideAnalysisResults();
+        this.hideAssetForm();
+        this.displayAssetsList();
+    }
+
+    showPortfolio() {
+        document.getElementById('analysisDashboard').classList.add('hidden');
+        document.getElementById('investmentDetails').classList.add('hidden');
+        document.querySelector('main > section:first-child').classList.remove('hidden');
+        calculator.displayPortfolio();
+    }
+
+    // Asset Management Methods
+    showAssetForm() {
+        document.getElementById('assetForm').classList.remove('hidden');
+        document.getElementById('investmentAnalysisForm').reset();
+        // Set default risk profile
+        document.querySelector('input[name="riskProfile"][value="moderate"]').checked = true;
+    }
+
+    hideAssetForm() {
+        document.getElementById('assetForm').classList.add('hidden');
+    }
+
+    clearAllAssets() {
+        if (confirm('Are you sure you want to clear all assets? This will remove all current assets from the analysis.')) {
+            this.currentAssets = [];
+            this.saveAssetsToStorage();
+            this.displayAssetsList();
+            this.hideAnalysisResults();
+            calculator.showNotification('All assets cleared', 'info');
+        }
+    }
+
+    hideAnalysisResults() {
+        document.getElementById('analysisResults').classList.add('hidden');
+    }
+
+    showAnalysisResults() {
+        document.getElementById('analysisResults').classList.remove('hidden');
+    }
+
+    // Asset Submission
+    handleAssetSubmit(e) {
+        e.preventDefault();
+        
+        const assetData = this.getFormData();
+        const asset = {
+            id: Date.now(),
+            ...assetData,
+            addedDate: new Date().toISOString()
+        };
+        
+        this.currentAssets.push(asset);
+        this.saveAssetsToStorage();
+        this.displayAssetsList();
+        this.hideAssetForm();
+        
+        calculator.showNotification('Asset added successfully!', 'success');
+    }
+
+    // Asset List Display
+    displayAssetsList() {
+        const container = document.getElementById('assetsList');
+        const actionsDiv = document.getElementById('analysisActions');
+        
+        if (this.currentAssets.length === 0) {
+            container.innerHTML = `
+                <div class="text-center text-gray-500 dark:text-gray-400 py-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+                    <i class="fas fa-chart-pie text-4xl mb-3"></i>
+                    <p>No assets added yet. Click "Add Asset" to start your analysis.</p>
+                </div>
+            `;
+            actionsDiv.classList.add('hidden');
+        } else {
+            container.innerHTML = this.currentAssets.map((asset, index) => `
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="flex items-center mb-2">
+                                <h4 class="font-semibold text-gray-800 dark:text-white mr-3">${asset.assetName}</h4>
+                                <span class="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100">
+                                    ${this.formatAssetType(asset.assetType)}
+                                </span>
+                                <span class="px-2 py-1 text-xs font-medium rounded-full ${
+                                    asset.riskProfile === 'low' ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100' :
+                                    asset.riskProfile === 'medium' ? 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100' :
+                                    asset.riskProfile === 'moderate' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100' :
+                                    asset.riskProfile === 'high' ? 'bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100' :
+                                    'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
+                                }">
+                                    ${this.formatRiskProfile(asset.riskProfile)} Risk
+                                </span>
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                <div>
+                                    <p class="text-gray-500 dark:text-gray-400">Investment</p>
+                                    <p class="font-medium text-gray-800 dark:text-white">${this.formatCurrency(asset.investmentAmount, asset.currency)}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-500 dark:text-gray-400">Current Value</p>
+                                    <p class="font-medium text-gray-800 dark:text-white">${this.formatCurrency(asset.currentValue, asset.currency)}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-500 dark:text-gray-400">Period</p>
+                                    <p class="font-medium text-gray-800 dark:text-white">${asset.years}y ${asset.months}m</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-500 dark:text-gray-400">Profit/Loss</p>
+                                    <p class="font-medium ${(asset.currentValue - asset.investmentAmount) >= 0 ? 'text-green-600' : 'text-red-600'}">
+                                        ${this.formatCurrency(asset.currentValue - asset.investmentAmount, asset.currency)}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <button onclick="analysisDashboard.removeAsset(${asset.id})" class="text-red-500 hover:text-red-700 transition-colors">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            actionsDiv.classList.remove('hidden');
+        }
+    }
+
+    removeAsset(assetId) {
+        if (confirm('Are you sure you want to remove this asset?')) {
+            this.currentAssets = this.currentAssets.filter(asset => asset.id !== assetId);
+            this.saveAssetsToStorage();
+            this.displayAssetsList();
+            calculator.showNotification('Asset removed', 'info');
+        }
+    }
+
+    getFormData() {
+        return {
+            investmentAmount: parseFloat(document.getElementById('analysisInvestmentAmount').value),
+            years: parseInt(document.getElementById('analysisYears').value),
+            months: parseInt(document.getElementById('analysisMonths').value) || 0,
+            assetName: document.getElementById('analysisAssetName').value,
+            assetType: document.getElementById('analysisAssetType').value,
+            riskProfile: document.querySelector('input[name="riskProfile"]:checked').value,
+            currentValue: parseFloat(document.getElementById('analysisCurrentValue').value),
+            currency: document.getElementById('analysisCurrency').value
+        };
+    }
+
+    // Cumulative Analysis
+    runCumulativeAnalysis() {
+        if (this.currentAssets.length === 0) {
+            calculator.showNotification('Please add at least one asset to analyze', 'warning');
+            return;
+        }
+        
+        // Perform individual analysis for each asset
+        const individualAnalyses = this.currentAssets.map(asset => this.performAnalysis(asset));
+        
+        // Calculate cumulative metrics
+        const cumulativeAnalysis = this.calculateCumulativeAnalysis(individualAnalyses);
+        
+        this.currentAnalysis = {
+            individual: individualAnalyses,
+            cumulative: cumulativeAnalysis,
+            analysisDate: new Date().toISOString()
+        };
+        
+        this.analyses.push(this.currentAnalysis);
+        this.saveAnalysesToStorage();
+        
+        this.displayCumulativeResults(this.currentAnalysis);
+        this.showAnalysisResults();
+        
+        calculator.showNotification('Multi-asset analysis completed successfully!', 'success');
+    }
+
+    calculateCumulativeAnalysis(individualAnalyses) {
+        const totalInvestment = individualAnalyses.reduce((sum, analysis) => sum + analysis.investmentAmount, 0);
+        const totalCurrentValue = individualAnalyses.reduce((sum, analysis) => sum + analysis.currentValue, 0);
+        const totalProfit = totalCurrentValue - totalInvestment;
+        const totalReturnPercentage = totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0;
+        
+        // Calculate weighted average annualized return
+        const weightedAnnualizedReturn = individualAnalyses.reduce((sum, analysis) => {
+            return sum + (analysis.annualizedReturn * analysis.investmentAmount);
+        }, 0) / totalInvestment;
+        
+        // Calculate weighted average risk score
+        const weightedRiskScore = individualAnalyses.reduce((sum, analysis) => {
+            return sum + (analysis.riskScore * analysis.investmentAmount);
+        }, 0) / totalInvestment;
+        
+        // Calculate average period
+        const avgPeriod = individualAnalyses.reduce((sum, analysis) => sum + analysis.totalPeriodInYears, 0) / individualAnalyses.length;
+        const profitPerYear = totalProfit / avgPeriod;
+        
+        return {
+            totalInvestment,
+            totalCurrentValue,
+            totalProfit,
+            totalReturnPercentage,
+            weightedAnnualizedReturn,
+            weightedRiskScore,
+            avgPeriod,
+            profitPerYear,
+            assetCount: individualAnalyses.length,
+            currency: individualAnalyses[0]?.currency || 'PKR'
+        };
+    }
+
+    // Analysis Calculation Engine
+    performAnalysis(data) {
+        const totalPeriodInYears = data.years + (data.months / 12);
+        const profit = data.currentValue - data.investmentAmount;
+        const totalReturnPercentage = ((profit / data.investmentAmount) * 100);
+        const profitPerYear = profit / totalPeriodInYears;
+        
+        // Calculate annualized return (CAGR)
+        let annualizedReturn = 0;
+        if (data.investmentAmount > 0 && totalPeriodInYears > 0) {
+            annualizedReturn = (Math.pow(data.currentValue / data.investmentAmount, 1 / totalPeriodInYears) - 1) * 100;
+        }
+
+        // Risk assessment
+        const riskScore = this.getRiskScore(data.riskProfile);
+        const riskAdjustedReturn = this.calculateRiskAdjustedReturn(annualizedReturn, riskScore);
+        
+        // Benchmark comparison
+        const benchmarkReturn = this.getBenchmarkReturn(data.assetType);
+        const performanceVsBenchmark = annualizedReturn - benchmarkReturn;
+
+        return {
+            id: Date.now(),
+            ...data,
+            totalPeriodInYears,
+            profit,
+            totalReturnPercentage,
+            profitPerYear,
+            annualizedReturn,
+            riskScore,
+            riskAdjustedReturn,
+            benchmarkReturn,
+            performanceVsBenchmark,
+            analysisDate: new Date().toISOString()
+        };
+    }
+
+    getRiskScore(riskProfile) {
+        const riskScores = {
+            'low': 1,
+            'medium': 2,
+            'moderate': 3,
+            'high': 4,
+            'very-high': 5
+        };
+        return riskScores[riskProfile] || 3;
+    }
+
+    calculateRiskAdjustedReturn(annualizedReturn, riskScore) {
+        // Simple risk-adjusted calculation: higher risk reduces the quality of return
+        const riskMultiplier = 1 - (riskScore - 1) * 0.1; // 10% reduction per risk level
+        return annualizedReturn * riskMultiplier;
+    }
+
+    getBenchmarkReturn(assetType) {
+        const benchmarks = {
+            'stocks': 10,
+            'money-market': 3,
+            'bonds': 5,
+            'debts': 4,
+            'commodity': 7,
+            'real-estate': 8,
+            'crypto': 15,
+            'mutual-funds': 8,
+            'etf': 9,
+            'other': 6
+        };
+        return benchmarks[assetType] || 6;
+    }
+
+    // Display Cumulative Results
+    displayCumulativeResults(analysisData) {
+        const resultsContainer = document.getElementById('analysisResults');
+        const { individual, cumulative } = analysisData;
+        
+        resultsContainer.innerHTML = `
+            <!-- Cumulative Summary Cards -->
+            <div class="mb-8">
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+                    <i class="fas fa-chart-line text-purple-600 mr-2"></i>
+                    Cumulative Analysis Summary
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-gradient-to-r from-green-50 to-green-100 dark:from-gray-700 dark:to-gray-600 rounded-lg p-4">
+                        <p class="text-sm text-gray-600 dark:text-gray-300">Total Profit/Loss</p>
+                        <p class="text-2xl font-bold ${cumulative.totalProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
+                            ${this.formatCurrency(cumulative.totalProfit, cumulative.currency)}
+                        </p>
+                    </div>
+                    <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-gray-700 dark:to-gray-600 rounded-lg p-4">
+                        <p class="text-sm text-gray-600 dark:text-gray-300">Total Return %</p>
+                        <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                            ${cumulative.totalReturnPercentage.toFixed(2)}%
+                        </p>
+                    </div>
+                    <div class="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-gray-700 dark:to-gray-600 rounded-lg p-4">
+                        <p class="text-sm text-gray-600 dark:text-gray-300">Weighted Annualized Return</p>
+                        <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                            ${cumulative.weightedAnnualizedReturn.toFixed(2)}%
+                        </p>
+                    </div>
+                    <div class="bg-gradient-to-r from-orange-50 to-orange-100 dark:from-gray-700 dark:to-gray-600 rounded-lg p-4">
+                        <p class="text-sm text-gray-600 dark:text-gray-300">Assets Analyzed</p>
+                        <p class="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                            ${cumulative.assetCount}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Individual Asset Results -->
+            <div class="mb-8">
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+                    <i class="fas fa-list text-purple-600 mr-2"></i>
+                    Individual Asset Performance
+                </h3>
+                <div class="space-y-4">
+                    ${individual.map((asset, index) => `
+                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h4 class="text-lg font-semibold text-gray-800 dark:text-white">${asset.assetName}</h4>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">${this.formatAssetType(asset.assetType)} • ${this.formatRiskProfile(asset.riskProfile)} Risk</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-lg font-bold ${asset.profit >= 0 ? 'text-green-600' : 'text-red-600'}">
+                                        ${this.formatCurrency(asset.profit, asset.currency)}
+                                    </p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">${asset.totalReturnPercentage.toFixed(2)}% return</p>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                <div>
+                                    <p class="text-gray-600 dark:text-gray-400">Investment</p>
+                                    <p class="font-medium text-gray-800 dark:text-white">${this.formatCurrency(asset.investmentAmount, asset.currency)}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-600 dark:text-gray-400">Current Value</p>
+                                    <p class="font-medium text-gray-800 dark:text-white">${this.formatCurrency(asset.currentValue, asset.currency)}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-600 dark:text-gray-400">Annualized Return</p>
+                                    <p class="font-medium text-gray-800 dark:text-white">${asset.annualizedReturn.toFixed(2)}%</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-600 dark:text-gray-400">vs Benchmark</p>
+                                    <p class="font-medium ${asset.performanceVsBenchmark >= 0 ? 'text-green-600' : 'text-red-600'}">
+                                        ${asset.performanceVsBenchmark >= 0 ? '+' : ''}${asset.performanceVsBenchmark.toFixed(2)}%
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <!-- Comparison Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Performance Comparison</h3>
+                    <div class="h-64">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Return Distribution</h3>
+                    <div class="h-64">
+                        <canvas id="distributionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Portfolio Insights -->
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                    <i class="fas fa-lightbulb text-purple-600 mr-2"></i>
+                    Portfolio Insights
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">
+                            ${cumulative.weightedRiskScore.toFixed(1)}/5
+                        </div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Weighted Risk Score</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">
+                            ${cumulative.avgPeriod.toFixed(1)} years
+                        </div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Average Investment Period</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">
+                            ${this.formatCurrency(cumulative.profitPerYear, cumulative.currency)}
+                        </div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Average Annual Profit</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Create charts after DOM is updated
+        setTimeout(() => {
+            this.createPerformanceChart(individual);
+            this.createDistributionChart(individual);
+        }, 100);
+    }
+
+    createPerformanceChart(individualAnalyses) {
+        const ctx = document.getElementById('performanceChart');
+        if (!ctx) return;
+
+        // Destroy existing chart if it exists
+        if (this.performanceChartInstance) {
+            this.performanceChartInstance.destroy();
+        }
+
+        const labels = individualAnalyses.map(asset => asset.assetName);
+        const returnsData = individualAnalyses.map(asset => asset.totalReturnPercentage);
+        const benchmarkData = individualAnalyses.map(asset => asset.benchmarkReturn);
+        
+        this.performanceChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Actual Return %',
+                        data: returnsData,
+                        backgroundColor: 'rgba(147, 51, 234, 0.5)',
+                        borderColor: 'rgba(147, 51, 234, 1)',
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'Benchmark Return %',
+                        data: benchmarkData,
+                        backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 2
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    createDistributionChart(individualAnalyses) {
+        const ctx = document.getElementById('distributionChart');
+        if (!ctx) return;
+
+        // Destroy existing chart if it exists
+        if (this.distributionChartInstance) {
+            this.distributionChartInstance.destroy();
+        }
+
+        const labels = individualAnalyses.map(asset => asset.assetName);
+        const profitData = individualAnalyses.map(asset => asset.profit);
+        
+        this.distributionChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: profitData,
+                    backgroundColor: [
+                        'rgba(34, 197, 94, 0.5)',
+                        'rgba(59, 130, 246, 0.5)',
+                        'rgba(147, 51, 234, 0.5)',
+                        'rgba(251, 146, 60, 0.5)',
+                        'rgba(239, 68, 68, 0.5)',
+                        'rgba(6, 182, 212, 0.5)'
+                    ],
+                    borderColor: [
+                        'rgba(34, 197, 94, 1)',
+                        'rgba(59, 130, 246, 1)',
+                        'rgba(147, 51, 234, 1)',
+                        'rgba(251, 146, 60, 1)',
+                        'rgba(239, 68, 68, 1)',
+                        'rgba(6, 182, 212, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                const value = new InvestmentAnalysisDashboard().formatCurrency(context.parsed, individualAnalyses[0].currency);
+                                return context.label + ': ' + value + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    calculateRiskAdjustedReturn(annualizedReturn, riskScore) {
+        // Simple risk-adjusted calculation: higher risk reduces the quality of return
+        const riskMultiplier = 1 - (riskScore - 1) * 0.1; // 10% reduction per risk level
+        return annualizedReturn * riskMultiplier;
+    }
+
+    getBenchmarkReturn(assetType) {
+        const benchmarks = {
+            'stocks': 10,
+            'money-market': 3,
+            'bonds': 5,
+            'debts': 4,
+            'commodity': 7,
+            'real-estate': 8,
+            'crypto': 15,
+            'mutual-funds': 8,
+            'etf': 9,
+            'other': 6
+        };
+        return benchmarks[assetType] || 6;
+    }
+
+    // Display Results
+    displayAnalysisResults(analysis) {
+        const resultsContainer = document.getElementById('analysisResults');
+        
+        resultsContainer.innerHTML = `
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div class="bg-gradient-to-r from-green-50 to-green-100 dark:from-gray-700 dark:to-gray-600 rounded-lg p-4">
+                    <p class="text-sm text-gray-600 dark:text-gray-300">Total Profit/Loss</p>
+                    <p class="text-2xl font-bold ${analysis.profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
+                        ${this.formatCurrency(analysis.profit, analysis.currency)}
+                    </p>
+                </div>
+                <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-gray-700 dark:to-gray-600 rounded-lg p-4">
+                    <p class="text-sm text-gray-600 dark:text-gray-300">Total Return %</p>
+                    <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                        ${analysis.totalReturnPercentage.toFixed(2)}%
+                    </p>
+                </div>
+                <div class="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-gray-700 dark:to-gray-600 rounded-lg p-4">
+                    <p class="text-sm text-gray-600 dark:text-gray-300">Annualized Return</p>
+                    <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                        ${analysis.annualizedReturn.toFixed(2)}%
+                    </p>
+                </div>
+                <div class="bg-gradient-to-r from-orange-50 to-orange-100 dark:from-gray-700 dark:to-gray-600 rounded-lg p-4">
+                    <p class="text-sm text-gray-600 dark:text-gray-300">Profit Per Year</p>
+                    <p class="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                        ${this.formatCurrency(analysis.profitPerYear, analysis.currency)}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Detailed Analysis -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Investment Details -->
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Investment Details</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">Asset Name:</span>
+                            <span class="font-medium text-gray-800 dark:text-white">${analysis.assetName}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">Asset Type:</span>
+                            <span class="font-medium text-gray-800 dark:text-white">${this.formatAssetType(analysis.assetType)}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">Risk Profile:</span>
+                            <span class="font-medium text-gray-800 dark:text-white">${this.formatRiskProfile(analysis.riskProfile)}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">Investment Period:</span>
+                            <span class="font-medium text-gray-800 dark:text-white">${analysis.years} years ${analysis.months} months</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">Initial Investment:</span>
+                            <span class="font-medium text-gray-800 dark:text-white">${this.formatCurrency(analysis.investmentAmount, analysis.currency)}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">Current Value:</span>
+                            <span class="font-medium text-gray-800 dark:text-white">${this.formatCurrency(analysis.currentValue, analysis.currency)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Analysis -->
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Performance Analysis</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">Risk Score:</span>
+                            <span class="font-medium text-gray-800 dark:text-white">${analysis.riskScore}/5</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">Risk-Adjusted Return:</span>
+                            <span class="font-medium text-gray-800 dark:text-white">${analysis.riskAdjustedReturn.toFixed(2)}%</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">Benchmark Return:</span>
+                            <span class="font-medium text-gray-800 dark:text-white">${analysis.benchmarkReturn}%</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">vs Benchmark:</span>
+                            <span class="font-medium ${analysis.performanceVsBenchmark >= 0 ? 'text-green-600' : 'text-red-600'}">
+                                ${analysis.performanceVsBenchmark >= 0 ? '+' : ''}${analysis.performanceVsBenchmark.toFixed(2)}%
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Section -->
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Profit Visualization</h3>
+                <div class="h-64">
+                    <canvas id="analysisChart"></canvas>
+                </div>
+            </div>
+        `;
+        
+        // Create chart after DOM is updated
+        setTimeout(() => this.createAnalysisChart(analysis), 100);
+    }
+
+    createAnalysisChart(analysis) {
+        const ctx = document.getElementById('analysisChart');
+        if (!ctx) return;
+
+        // Destroy existing chart if it exists
+        if (this.analysisChartInstance) {
+            this.analysisChartInstance.destroy();
+        }
+
+        const labels = ['Initial Investment', 'Current Value'];
+        const data = [analysis.investmentAmount, analysis.currentValue];
+        
+        this.analysisChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Value',
+                    data: data,
+                    backgroundColor: [
+                        'rgba(59, 130, 246, 0.5)',
+                        analysis.profit >= 0 ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)'
+                    ],
+                    borderColor: [
+                        'rgba(59, 130, 246, 1)',
+                        analysis.profit >= 0 ? 'rgba(34, 197, 94, 1)' : 'rgba(239, 68, 68, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + new InvestmentAnalysisDashboard().formatCurrency(context.parsed.y, analysis.currency);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return new InvestmentAnalysisDashboard().formatCurrency(value, analysis.currency);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Utility Functions
+    formatCurrency(amount, currency = 'PKR') {
+        const symbol = currency === 'USD' ? '$' : 'Rs';
+        
+        if (currency === 'USD') {
+            return symbol + amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        } else {
+            return symbol + Math.round(amount).toLocaleString('en-PK');
+        }
+    }
+
+    formatAssetType(assetType) {
+        const formatted = {
+            'stocks': 'Stocks',
+            'money-market': 'Money Market',
+            'bonds': 'Bonds',
+            'debts': 'Debts',
+            'commodity': 'Commodity',
+            'real-estate': 'Real Estate',
+            'crypto': 'Cryptocurrency',
+            'mutual-funds': 'Mutual Funds',
+            'etf': 'ETF',
+            'other': 'Other'
+        };
+        return formatted[assetType] || assetType;
+    }
+
+    formatRiskProfile(riskProfile) {
+        const formatted = {
+            'low': 'Low',
+            'medium': 'Medium',
+            'moderate': 'Moderate',
+            'high': 'High',
+            'very-high': 'Very High'
+        };
+        return formatted[riskProfile] || riskProfile;
+    }
+}
+
+// Initialize Analysis Dashboard
+const analysisDashboard = new InvestmentAnalysisDashboard();

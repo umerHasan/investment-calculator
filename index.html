@@ -78,9 +78,14 @@
                     <i class="fas fa-chart-line text-3xl text-primary-600 dark:text-primary-400"></i>
                     <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Advanced Investment Calculator</h1>
                 </div>
-                <button id="themeToggle" class="w-10 h-10 rounded-lg bg-white dark:bg-gray-700 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center">
-                    <i class="fas fa-moon text-gray-600 dark:text-yellow-400"></i>
-                </button>
+                <div class="flex items-center space-x-3">
+                    <button id="analyzeBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg">
+                        <i class="fas fa-chart-pie mr-2"></i>Analyze
+                    </button>
+                    <button id="themeToggle" class="w-10 h-10 rounded-lg bg-white dark:bg-gray-700 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center">
+                        <i class="fas fa-moon text-gray-600 dark:text-yellow-400"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </header>
@@ -280,6 +285,175 @@
                 <!-- Year-wise Accordion -->
                 <div id="yearAccordion" class="space-y-4">
                     <!-- Years will be dynamically added here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Investment Analysis Dashboard -->
+        <section id="analysisDashboard" class="hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800 dark:text-white">
+                        <i class="fas fa-chart-pie text-purple-600 mr-3"></i>
+                        Investment Analysis Dashboard
+                    </h2>
+                    <div class="flex space-x-2">
+                        <button id="backToPortfolioFromAnalysis" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
+                            <i class="fas fa-arrow-left mr-2"></i>Back to Portfolio
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Analysis Input Form -->
+                <div id="analysisForm" class="mb-8">
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Investment Assets</h3>
+                            <div class="flex space-x-2">
+                                <button id="clearAllAssets" class="px-4 py-2 border border-red-300 dark:border-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900 transition-colors text-red-600 dark:text-red-400">
+                                    <i class="fas fa-trash mr-2"></i>Clear All
+                                </button>
+                                <button id="addNewAsset" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200">
+                                    <i class="fas fa-plus mr-2"></i>Add Asset
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Asset List -->
+                        <div id="assetsList" class="mb-6 space-y-4">
+                            <div class="text-center text-gray-500 dark:text-gray-400 py-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+                                <i class="fas fa-chart-pie text-4xl mb-3"></i>
+                                <p>No assets added yet. Click "Add Asset" to start your analysis.</p>
+                            </div>
+                        </div>
+
+                        <!-- Asset Form (Hidden by default) -->
+                        <div id="assetForm" class="hidden">
+                            <div class="border-t border-gray-200 dark:border-gray-600 pt-6">
+                                <h4 class="text-md font-semibold text-gray-800 dark:text-white mb-4">Add New Asset</h4>
+                                <form id="investmentAnalysisForm" class="space-y-6">
+                                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                                <i class="fas fa-money-bill-wave mr-2"></i>Investment Amount
+                                            </label>
+                                            <input type="number" id="analysisInvestmentAmount" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white" placeholder="100000" min="0" step="0.01" required>
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                                <i class="fas fa-calendar-alt mr-2"></i>Investment Period (Years)
+                                            </label>
+                                            <input type="number" id="analysisYears" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white" placeholder="5" min="0" max="50" required>
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                                <i class="fas fa-clock mr-2"></i>Additional Months
+                                            </label>
+                                            <input type="number" id="analysisMonths" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white" placeholder="0" min="0" max="11">
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                                <i class="fas fa-tag mr-2"></i>Asset Name
+                                            </label>
+                                            <input type="text" id="analysisAssetName" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white" placeholder="e.g., Apple Stocks, Gold ETF" required>
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                                <i class="fas fa-list mr-2"></i>Asset Type
+                                            </label>
+                                            <select id="analysisAssetType" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white" required>
+                                                <option value="">Select Asset Type</option>
+                                                <option value="stocks">Stocks</option>
+                                                <option value="money-market">Money Market</option>
+                                                <option value="bonds">Bonds</option>
+                                                <option value="debts">Debts</option>
+                                                <option value="commodity">Commodity</option>
+                                                <option value="real-estate">Real Estate</option>
+                                                <option value="crypto">Cryptocurrency</option>
+                                                <option value="mutual-funds">Mutual Funds</option>
+                                                <option value="etf">ETF</option>
+                                                <option value="other">Other</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                                <i class="fas fa-exclamation-triangle mr-2"></i>Risk Profile
+                                            </label>
+                                            <div class="space-y-2">
+                                                <label class="flex items-center">
+                                                    <input type="radio" name="riskProfile" value="low" class="mr-2 text-purple-600 focus:ring-purple-500">
+                                                    <span class="text-sm text-gray-700 dark:text-gray-300">Low</span>
+                                                </label>
+                                                <label class="flex items-center">
+                                                    <input type="radio" name="riskProfile" value="medium" class="mr-2 text-purple-600 focus:ring-purple-500">
+                                                    <span class="text-sm text-gray-700 dark:text-gray-300">Medium</span>
+                                                </label>
+                                                <label class="flex items-center">
+                                                    <input type="radio" name="riskProfile" value="moderate" class="mr-2 text-purple-600 focus:ring-purple-500" checked>
+                                                    <span class="text-sm text-gray-700 dark:text-gray-300">Moderate</span>
+                                                </label>
+                                                <label class="flex items-center">
+                                                    <input type="radio" name="riskProfile" value="high" class="mr-2 text-purple-600 focus:ring-purple-500">
+                                                    <span class="text-sm text-gray-700 dark:text-gray-300">High</span>
+                                                </label>
+                                                <label class="flex items-center">
+                                                    <input type="radio" name="riskProfile" value="very-high" class="mr-2 text-purple-600 focus:ring-purple-500">
+                                                    <span class="text-sm text-gray-700 dark:text-gray-300">Very High</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                                <i class="fas fa-chart-line mr-2"></i>Current Value
+                                            </label>
+                                            <input type="number" id="analysisCurrentValue" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white" placeholder="150000" min="0" step="0.01" required>
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                                <i class="fas fa-dollar-sign mr-2"></i>Currency
+                                            </label>
+                                            <select id="analysisCurrency" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+                                                <option value="PKR">Rs - Pakistani Rupee</option>
+                                                <option value="USD">USD - US Dollar</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex justify-end space-x-4">
+                                        <button type="button" id="cancelAssetForm" class="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                            Cancel
+                                        </button>
+                                        <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-6 rounded-lg transition-all duration-200">
+                                            <i class="fas fa-plus mr-2"></i>Add Asset
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Analysis Actions -->
+                        <div id="analysisActions" class="hidden">
+                            <div class="border-t border-gray-200 dark:border-gray-600 pt-6">
+                                <div class="flex justify-end space-x-4">
+                                    <button id="runAnalysis" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg">
+                                        <i class="fas fa-calculator mr-2"></i>Run Analysis
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analysis Results -->
+                <div id="analysisResults" class="hidden">
+                    <!-- Results will be dynamically added here -->
                 </div>
             </div>
         </section>
