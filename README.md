@@ -10,7 +10,7 @@ A comprehensive web-based investment calculator that helps you plan and track yo
 - Support for both SIP and Insurance investment types
 - Multi-currency support (PKR, USD)
 
-### � **NEW: Investment Analysis Dashboard**
+### 📊 **NEW: Investment Analysis Dashboard**
 - **Multi-Asset Analysis**: Add and analyze multiple investments simultaneously
 - **Separate & Cumulative Insights**: View individual asset performance and portfolio-wide metrics
 - **Advanced Calculations**: CAGR, risk-adjusted returns, weighted averages
@@ -20,7 +20,7 @@ A comprehensive web-based investment calculator that helps you plan and track yo
 - **Interactive Visualizations**: Performance comparison charts and return distribution analysis
 - **Portfolio Insights**: Weighted risk scores, average investment periods, annual profit metrics
 
-### � SIP Investment Calculator
+### 💰 SIP Investment Calculator
 - Calculate returns on monthly SIP investments
 - Variable monthly contributions with annual increments
 - Project future value based on expected annual returns
