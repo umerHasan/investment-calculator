@@ -1099,7 +1099,10 @@ class InvestmentAnalysisDashboard {
                                 </div>
                             </div>
                         </div>
-                        <div class="ml-4">
+                        <div class="ml-4 flex space-x-2">
+                            <button onclick="analysisDashboard.editAsset(${asset.id})" class="text-blue-500 hover:text-blue-700 transition-colors">
+                                <i class="fas fa-edit"></i>
+                            </button>
                             <button onclick="analysisDashboard.removeAsset(${asset.id})" class="text-red-500 hover:text-red-700 transition-colors">
                                 <i class="fas fa-trash"></i>
                             </button>
@@ -1118,6 +1121,189 @@ class InvestmentAnalysisDashboard {
             this.displayAssetsList();
             calculator.showNotification('Asset removed', 'info');
         }
+    }
+
+    editAsset(assetId) {
+        const asset = this.currentAssets.find(a => a.id === assetId);
+        if (!asset) return;
+
+        // Create edit modal
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+        modal.innerHTML = `
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-gray-800 dark:text-white">
+                            <i class="fas fa-edit text-blue-600 mr-2"></i>
+                            Edit Asset: ${asset.assetName}
+                        </h3>
+                        <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <form id="editAssetForm" class="space-y-6">
+                        <!-- Read-only fields display -->
+                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Asset Information (Read-only)</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Asset Name</label>
+                                    <div class="px-3 py-2 bg-white dark:bg-gray-600 rounded border border-gray-200 dark:border-gray-500">
+                                        ${asset.assetName}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Asset Type</label>
+                                    <div class="px-3 py-2 bg-white dark:bg-gray-600 rounded border border-gray-200 dark:border-gray-500">
+                                        ${this.formatAssetType(asset.assetType)}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Risk Profile</label>
+                                    <div class="px-3 py-2 bg-white dark:bg-gray-600 rounded border border-gray-200 dark:border-gray-500">
+                                        ${this.formatRiskProfile(asset.riskProfile)}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Editable fields -->
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-money-bill-wave mr-2"></i>Investment Amount
+                                </label>
+                                <input type="number" id="editInvestmentAmount" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white" value="${asset.investmentAmount}" min="0" step="0.01" required>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-chart-line mr-2"></i>Current Value
+                                </label>
+                                <input type="number" id="editCurrentValue" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white" value="${asset.currentValue}" min="0" step="0.01" required>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-calendar-alt mr-2"></i>Investment Period (Years)
+                                </label>
+                                <input type="number" id="editYears" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white" value="${asset.years}" min="0" max="50" required>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-clock mr-2"></i>Additional Months
+                                </label>
+                                <input type="number" id="editMonths" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white" value="${asset.months}" min="0" max="11">
+                            </div>
+                        </div>
+                        
+                        <div class="bg-blue-50 dark:bg-blue-900 rounded-lg p-3">
+                            <p class="text-sm text-blue-800 dark:text-blue-200">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                Only investment amount, current value, and time period can be edited. Asset name, type, and risk profile remain fixed.
+                            </p>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-4">
+                            <button type="button" onclick="this.closest('.fixed').remove()" class="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                Cancel
+                            </button>
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors">
+                                <i class="fas fa-save mr-2"></i>Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Handle form submission with proper event handling
+        const form = document.getElementById('editAssetForm');
+        const handleSubmit = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.saveAssetChanges(assetId, modal);
+        };
+        
+        form.addEventListener('submit', handleSubmit);
+        
+        // Store the handler for cleanup
+        modal._formHandler = handleSubmit;
+        
+        // Close on outside click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                // Clean up event listener before removing
+                if (modal._formHandler) {
+                    form.removeEventListener('submit', modal._formHandler);
+                }
+                modal.remove();
+            }
+        });
+        
+        // Clean up on modal close via X button or Cancel
+        const closeButtons = modal.querySelectorAll('button[onclick*="remove"]');
+        closeButtons.forEach(button => {
+            const originalOnclick = button.getAttribute('onclick');
+            button.removeAttribute('onclick');
+            button.addEventListener('click', () => {
+                // Clean up event listener before removing
+                if (modal._formHandler) {
+                    form.removeEventListener('submit', modal._formHandler);
+                }
+                modal.remove();
+            });
+        });
+    }
+
+    saveAssetChanges(assetId, modal) {
+        const asset = this.currentAssets.find(a => a.id === assetId);
+        if (!asset) return;
+
+        // Get updated values
+        const newInvestmentAmount = parseFloat(document.getElementById('editInvestmentAmount').value);
+        const newCurrentValue = parseFloat(document.getElementById('editCurrentValue').value);
+        const newYears = parseInt(document.getElementById('editYears').value);
+        const newMonths = parseInt(document.getElementById('editMonths').value) || 0;
+
+        // Validate inputs
+        if (isNaN(newInvestmentAmount) || newInvestmentAmount < 0 ||
+            isNaN(newCurrentValue) || newCurrentValue < 0 ||
+            isNaN(newYears) || newYears < 0 || newYears > 50 ||
+            newMonths < 0 || newMonths > 11) {
+            calculator.showNotification('Please enter valid values', 'error');
+            return;
+        }
+
+        // Update asset
+        asset.investmentAmount = newInvestmentAmount;
+        asset.currentValue = newCurrentValue;
+        asset.years = newYears;
+        asset.months = newMonths;
+
+        // Save and refresh
+        this.saveAssetsToStorage();
+        this.displayAssetsList();
+        
+        // Clean up event listener before removing modal
+        if (modal && modal._formHandler) {
+            const form = document.getElementById('editAssetForm');
+            if (form) {
+                form.removeEventListener('submit', modal._formHandler);
+            }
+        }
+        
+        // Close modal
+        if (modal) {
+            modal.remove();
+        }
+        
+        calculator.showNotification('Asset updated successfully!', 'success');
     }
 
     getFormData() {
